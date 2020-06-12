@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des étudiants</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+
+
+    <style>
+        #champNom, #champPrenom, #champVille, #champCertifie {
+            color: red;
+        }
+
+        #btn-enregistrer {
+            background-color: green;
+        }
+
+        #btn-supprimer {
+            background-color: red;
+            position: absolute;
+            left: 20%;
+
+            bottom: 5.8%;
+        }
+
+        #btn-ajout {
+            background-color: deepskyblue;
+            margin: 1%;
+        }
+
+        body {
+            display: inline;
+        }
+
+        body section ul li {
+            font-size: larger;
+            margin-top: 5px;
+            list-style: none;
+        }
+
+        #sect-form {
+            width: 50%;
+            display: inline-block;
+            position: absolute;
+            font-size: larger;
+            top: 1%;
+        }
+
+        #sect-form div {
+            margin-top: 5px;
+        }
+
+        #sect-liste {
+            width: 45%;
+            display: inline-block;
+            margin: 0.5%;
+        }
+    </style>
+</head>
+
+
+<body>
+
+<section id="sect-liste">
+
+    <h1>Gestion des étudiants</h1>
+
+    <button id="btn-ajout" onclick="ajouterEtudiant()">Ajouter un étudiant</button>
+    <ul id="etudiants"></ul>
+
+</section>
+
+
+<section id="sect-form">
+
+    <h1>Détails de l'étudiant</h1>
+
+    <form action="index.html" onsubmit="return validerFormulaire()" method="get" name="formulaire">
+        <div>
+            <label for="prenom">Prénom :</label>
+            <input type="text" name="prenom" id="prenom" onkeyup="verifierPrenom()" onmouseover="verifierPrenom()"
+                   placeholder="max">
+            <span id="champPrenom" class="test"> Le prénom doit faire entre 2 et 10 lettres</span>
+        </div>
+        <div>
+            <label for="nom">nom :</label>
+            <input type="text" name="nom" id="nom" onkeyup="verifierNom()" onmouseover="verifierNom()"
+                   placeholder="payne">
+            <span id="champNom" class="test"> Le nom doit faire entre 2 et 10 lettres</span>
+        </div>
+        <div>
+            <label for="ville">Ville :</label>
+            <input type="text" name="ville" id="ville" onkeyup="verifierVille()" onmouseover="verifierVille()"
+                   placeholder="new york">
+            <span id="champVille" class="test"> La ville doit faire entre 2 et 49 lettres </span>
+        </div>
+        <div>
+            <label for="certifie">Cette personne existe</label>
+            <input type="checkbox" name="certifie" id="certifie" onchange="verifierCaseCochee()"
+                   onmouseover="verifierCaseCochee()">
+            <span id="champCertifie" class="test">Veuillez certifier que cette personne existe</span>
+        </div>
+
+        <div id="btns">
+            <p>
+                <input type="submit" value="Enregistrer" id="btn-enregistrer" onclick="modifierEtudiant()">
+            </p>
+            <button onclick="supprimerEtudiant()" id="btn-supprimer">Supprimer</button>
+        </div>
+    </form>
+</section>
+
+
+<script type="text/javascript">
+
+    const baseUrl = "http://localhost:9090";
+
+    window.onload = function () {
+        fetch(baseUrl + '/etudiants')
+            .then(function (reponse) {
+                return reponse.json();
+            })
+            .then(function (json) {
+                const selectEtudiants = document.getElementById('etudiants');
+
+                json.forEach(function (etudiant) {
+                    const li = document.createElement('li');
+                    const texte = document.createTextNode(etudiant.prenom + ' ' + etudiant.nom);
+                    li.appendChild(texte);
+                    li.id = etudiant.id;
+                    li.addEventListener("click", activerEtudiant);
+                    selectEtudiants.appendChild(li);
+                })
+            })
+            .catch(function (erreur) {
+                alert('erreur : ' + erreur);
+            })
+    };
+
+    class Etudiant {
+
+        id;
+        nom;
+        prenom;
+        ville;
+
+        constructor() {
+
+            this.id = null;
+            this.nom = '';
+            this.prenom = '';
+            this.ville = '';
+        }
+    }
+
+    let etudiantActif = new Etudiant();
+
+
+    function activerEtudiant() {
+        etudiantActif.id = this.id
+
+        fetch(baseUrl + '/etudiants/' + etudiantActif.id)
+            .then(function (reponse) {
+                return reponse.json();
+            })
+            .then(function (json) {
+                document.getElementById('prenom').value = json.prenom;
+                document.getElementById('nom').value = json.nom;
+                document.getElementById('ville').value = json.ville;
+                etudiantActif.prenom = json.prenom;
+                etudiantActif.nom = json.nom;
+                etudiantActif.ville = json.ville;
+            })
+            .catch(function (e) {
+                console.error(e)
+            })
+    }
+
+
+    const regexNom = /^[a-zA-Z]{2,10}$/;
+    const regexVille = /^[a-zA-Zé]([' '\s]?[a-zA-Zé]){1,49}$/;
+
+
+    function validerFormulaire() {
+        let valide = true;
+
+        valide = verifierNom() && valide;
+        valide = verifierPrenom() && valide;
+        valide = verifierVille() && valide;
+        valide = verifierCaseCochee() && valide;
+
+        return valide;
+    }
+
+    function verifierNom() {
+        if (document.formulaire.nom.value.match(regexNom)) {
+            document.getElementById('champNom').style.display = 'none';
+            return true;
+        } else {
+            document.getElementById('champNom').style.display = 'inline-block';
+            return false;
+        }
+    }
+
+    function verifierPrenom() {
+        if (document.formulaire.prenom.value.match(regexNom)) {
+            document.getElementById('champPrenom').style.display = 'none';
+            return true;
+        } else {
+            document.getElementById('champPrenom').style.display = 'inline-block';
+            return false;
+        }
+    }
+
+    function verifierVille() {
+        if (document.formulaire.ville.value.match(regexVille)) {
+            document.getElementById('champVille').style.display = 'none';
+            return true;
+        } else {
+            document.getElementById('champVille').style.display = 'inline-block';
+            return false;
+        }
+    }
+
+    function verifierCaseCochee() {
+        if (document.formulaire.certifie.checked) {
+            document.getElementById('champCertifie').style.display = 'none';
+            return true;
+        } else {
+            document.getElementById('champCertifie').style.display = 'inline-block';
+            return false;
+        }
+    }
+
+    async function modifierEtudiant() {
+        let etudiantActif = new Etudiant();
+        etudiantActif.prenom = document.getElementById("prenom");
+        etudiantActif.nom = document.getElementById("nom");
+        etudiantActif.ville = document.getElementById("ville");
+
+        if (validerFormulaire()) {
+            try {
+                await fetch(baseUrl + '/etudiants/' + etudiantActif.id, {
+                    method: 'put',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(etudiantActif)
+                });
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    async function ajouterEtudiant() {
+        let etudiantActif = new Etudiant();
+        etudiantActif.prenom = document.getElementById("prenom");
+        etudiantActif.nom = document.getElementById("nom");
+        etudiantActif.ville = document.getElementById("ville");
+
+        if (validerFormulaire()) {
+            try {
+                const reponse = await fetch(baseUrl + '/etudiants', {
+                    method: 'post',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(etudiantActif)
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    async function supprimerEtudiant() {
+        if (validerFormulaire()) {
+
+            if (confirm("Supprimer l'étudiant?")) {
+
+                try {
+                    const reponse = await fetch(baseUrl + '/etudiants/' + etudiantActif.id, {method: 'delete'});
+                    if (reponse.status === 200) {
+                        window.reload();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+    }
+
+
+</script>
+</body>
+</html>
+
